@@ -1,0 +1,35 @@
+name: Semgrep AI Code Review (PoC)
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write 
+
+jobs:
+  semgrep-ai:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE }}
+
+      - name: Run Semgrep Scan
+        id: semgrep
+        uses: adanalvarez/semgrep-llm-advisor/semgrep@main
+        with:
+          semgrep_config: ''  # Optionally provide a custom Semgrep configuration
+
+      - name: Run AI Enhancement and Comment
+        if: ${{ toJson(fromJson(steps.semgrep.outputs.semgrep_results_json).results) != '[]' }}
+        uses: adanalvarez/semgrep-llm-advisor/ai@main
+        with:
+          semgrep_results: ${{ steps.semgrep.outputs.semgrep_results_json }}

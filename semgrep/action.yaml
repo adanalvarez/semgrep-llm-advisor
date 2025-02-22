@@ -1,0 +1,46 @@
+name: Semgrep AI Enhanced Code Review
+
+description: >
+  A composite action to execute a Semgrep CI scan, optionally using a custom
+  configuration file, and output the results in JSON format for further processing.
+
+inputs:
+  semgrep_config:
+    description: >
+      (Optional) Path to the Semgrep configuration file.
+      If not provided, the default configuration "p/default" will be used.
+    required: false
+    default: ''
+
+outputs:
+  semgrep_results_json:
+    description: 'Semgrep scan results in JSON format.'
+    value: ${{ steps.results.outputs.semgrep_results_json }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set Up Python Environment
+      shell: bash
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        pip install semgrep
+
+    - name: Execute Semgrep CI Scan
+      shell: bash
+      id: results
+      run: |
+        source venv/bin/activate
+        # Use the provided semgrep_config input or default to "p/default" if empty
+        CONFIG="${{ inputs.semgrep_config }}"
+        if [ -z "$CONFIG" ]; then
+          CONFIG="p/default"
+        fi
+        echo "Using Semgrep configuration: $CONFIG"
+        semgrep ci --config "$CONFIG" --json > semgrep_results.json || true
+        semgrep_json=$(cat semgrep_results.json)
+        echo "semgrep_results_json=${semgrep_json}" >> $GITHUB_OUTPUT

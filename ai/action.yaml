@@ -1,0 +1,70 @@
+name: AI Enhancement
+
+description: >
+  A composite action to process Semgrep results and generate AI-driven recommendations using Anthropic’s Claude model via AWS Bedrock.
+
+inputs:
+  semgrep_results:
+    description: 'Semgrep results as a JSON string.'
+    required: true
+  comment_pr:
+    description: 'Whether to comment on the pull request with findings.'
+    required: false
+    default: 'true'
+
+outputs:
+  has_findings:
+    description: 'Indicates whether findings were detected.'
+    value: ${{ steps.determine_has_findings.outputs.has_findings }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python Environment
+      shell: bash
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        pip install -r ${GITHUB_ACTION_PATH}/requirements.txt
+
+    - name: Execute AI Enhancement Script
+      id: enhanced
+      shell: bash
+      env:
+        SEMGREP_RESULTS: ${{ inputs.semgrep_results }}
+      run: |
+        source venv/bin/activate
+        echo "$SEMGREP_RESULTS" > semgrep_results.json
+        python ${GITHUB_ACTION_PATH}/ai_enhance_results.py semgrep_results.json
+
+    - name: Determine if findings exist
+      id: determine_has_findings
+      shell: bash
+      run: |
+        if [ -f enhanced_results.json ]; then
+          count=$(jq '.recommendations | length' enhanced_results.json)
+          if [ "$count" -gt 0 ]; then
+            echo "has_findings=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_findings=false" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "has_findings=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Markdown File from JSON
+      id: create_markdown
+      shell: bash
+      run: |
+          if [ "$(jq '.recommendations | length' enhanced_results.json)" -gt 0 ]; then
+            jq -r '.recommendations[] |
+            "### \(.title)\n\n**Confidence**: \(.confidence_in_the_solution)%\n\n#### Reason:\n\(.reason)\n\n#### Proposed Code:\n```\n\(.proposed_code)\n```"' enhanced_results.json > comment.md
+          else
+            echo "No recommendations found." > comment.md
+          fi
+
+    - name: PR comment with file
+      if: ${{ inputs.comment_pr == 'true' && steps.determine_has_findings.outputs.has_findings == 'true' }}
+      uses: thollander/actions-comment-pull-request@v3
+      with:
+        file-path: comment.md
