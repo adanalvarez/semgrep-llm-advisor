@@ -12,6 +12,9 @@ permissions:
 jobs:
   semgrep-ai:
     runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      MODEL_ID: ${{ vars.MODEL_ID }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3

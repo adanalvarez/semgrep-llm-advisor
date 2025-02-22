@@ -29,6 +29,7 @@ This integration helps streamline code security reviews by automatically identif
 - Repository variable and secret setup:
   - **Repository Variable:** `AWS_REGION` (e.g., `us-east-2`)
   - **Repository Secret:** `AWS_ROLE` (e.g., `arn:aws:iam::YOUR_ACCOUNT_ID:role/YOUR_ROLE_NAME`)
+  - **Amazon Bedrock foundation model:** `MODEL_ID` (e.g., `us.anthropic.claude-3-5-haiku-20241022-v1:0`)
 
 ### Setting Up the Workflow
 
@@ -50,6 +51,9 @@ This integration helps streamline code security reviews by automatically identif
    jobs:
      semgrep-ai:
        runs-on: ubuntu-latest
+       env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          MODEL_ID: ${{ vars.MODEL_ID }}
        steps:
          - name: Checkout Code
            uses: actions/checkout@v3
@@ -75,7 +79,7 @@ This integration helps streamline code security reviews by automatically identif
 
 2. **Configure Repository Variables and Secrets:**
 
-- In your repository settings, add a variable named AWS_REGION with your desired region (e.g., us-east-2).
+- In your repository settings, add a variable named AWS_REGION with your desired region (e.g., us-east-2) and a variable named MODEL_ID with your desired foundational model (e.g., `us.anthropic.claude-3-5-haiku-20241022-v1:0`).
 - Under repository secrets, add a secret named AWS_ROLE containing your AWS role ARN.
 
 3. **Customize Inputs as Needed:**

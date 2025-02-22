@@ -73,9 +73,12 @@ def prompt_claude_proposed_solution(check_id: str, message: str, extracted_code:
     """
     logging.info(f"Prompting Claude for solution with check_id: {check_id}")
 
-    # Create a Bedrock Runtime client in the AWS Region of your choice.
-    client = boto3.client("bedrock-runtime", region_name="us-east-1")
-    model_id = "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+    # Retrieve AWS region and model ID from environment variables, with defaults
+    aws_region = os.environ.get("AWS_REGION", "us-east-1")
+    model_id = os.environ.get("MODEL_ID", "us.anthropic.claude-3-5-haiku-20241022-v1:0")
+
+    # Create a Bedrock Runtime client using the provided AWS region.
+    client = boto3.client("bedrock-runtime", region_name=aws_region)
 
     # Define the prompt and structure for the model.
     prompt = ("You are an expert at cybersecurity. You will be given a piece of vulnerable code, "
